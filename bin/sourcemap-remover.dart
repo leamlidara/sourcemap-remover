@@ -33,9 +33,13 @@ void main(List<String> arguments) {
     //Delete sourceMap + fix sourceMap not found
     for (var j = 0; j < cntFileTypes; j++) {
       fType = fileTypes[j];
-
-      if (!path.endsWith("$fType.map")) File(path).delete();
-      if (path.endsWith(fType)) _fixSourceMapNotFound(path);
+      try {
+        if (path.endsWith("$fType.map")) File(path).deleteSync();
+        if (path.endsWith(fType)) _fixSourceMapNotFound(path);
+      } catch (e) {
+        print(e);
+        return;
+      }
     }
   }
 }
