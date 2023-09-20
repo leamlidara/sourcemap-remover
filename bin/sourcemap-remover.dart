@@ -4,7 +4,7 @@ void main(List<String> arguments) {
   if (arguments.contains("-h") || arguments.contains("--help")) {
     print("sourcemap-remover [option [directory path]]");
     print("options: -h,  --help : display this help");
-    print("If directory path did not specific, application will get current directory");
+    print("If directory path did not specific, application will get current directory.");
     return;
   }
 
@@ -20,33 +20,37 @@ void main(List<String> arguments) {
   } else {
     lst = Directory.current.listSync(recursive: true);
   }
+
+  List<String> fileTypes = [".js", ".css"];
+  String path = "";
+  String fType = "";
   int cnt = lst.length;
+  int cntFileTypes = fileTypes.length;
   for (var i = 0; i < cnt; i++) {
     if (lst[i] is Directory) continue;
-    _checkAndRemoveMap(lst[i].path);
-    _fixMapNotFound(lst[i].path);
+    path = lst[i].path;
+
+    //Delete sourceMap + fix sourceMap not found
+    for (var j = 0; j < cntFileTypes; j++) {
+      fType = fileTypes[j];
+
+      if (!path.endsWith("$fType.map")) File(path).delete();
+      if (path.endsWith(fType)) _fixSourceMapNotFound(path);
+    }
   }
 }
 
-void _checkAndRemoveMap(String path) {
-  if (!path.endsWith(".map")) return;
-  List<String> names = path.split('\\');
-  var nFile = File(path.substring(0, path.length - 4));
-  if (nFile.existsSync()) {
-    var content = nFile.readAsStringSync();
-    content = content.replaceAll("//# sourceMappingURL=${names[names.length - 1]}", "");
-    nFile.writeAsString(content.trim());
-  }
-  File(path).delete();
-}
-
-void _fixMapNotFound(String path) {
-  if (!path.endsWith(".js") && !path.endsWith(".css")) return;
-
+void _fixSourceMapNotFound(String path) {
   var f = File(path);
   var content = f.readAsStringSync();
-  if (content.contains("//# sourceMappingURL=")) {
-    content = content.replaceAll(RegExp(r"\/\/\# sourceMappingURL=[a-zA-Z0-9\.\-\~ ]+\.map"), "");
-    f.writeAsString(content.trim());
+  if (content.contains("# sourceMappingURL=") == false) return;
+
+  for (var i in [
+    RegExp(r"\/\/\# sourceMappingURL=[a-zA-Z0-9\.\-\~ ]+\.map"),
+    RegExp(r"\/\*\# sourceMappingURL=[a-zA-Z0-9\.\-\~ ]+\.map[ ]+?\*\/")
+  ]) {
+    content = content.replaceAll(i, "");
   }
+
+  f.writeAsString(content.trim());
 }
