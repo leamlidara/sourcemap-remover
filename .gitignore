@@ -3,3 +3,7 @@
 .dart_tool/
 /.dart_tool
 /pubspec.lock
+/bin/Linux.zip
+/bin/Windows.zip
+/bin/sourcemap-remover.exe
+/bin/sourcemap-remover
