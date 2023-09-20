@@ -4,9 +4,15 @@ import "dart:io";
 void main(List<String> arguments) {
   List<String> knowFileTypes = [".js", ".ts", ".css", ".sass"];
   if (arguments.contains("-h") || arguments.contains("--help")) {
-    print("sourcemap-remover [option [directory path]]");
+    print("SourceMap remover v1.0.2 by LEAM LIDARA");
+    print("https://github.com/leamlidara");
+    print("---------------------------------------------");
+    print("");
+    print("Usage: ");
+    print("sourcemap-remover [option [directory_path]]");
     print("options: -h,  --help : display this help");
-    print("If a directory path is not specified, the application will use the current directory.");
+    print("");
+    print("Noted: If a directory path is not specified, the application will use the current directory.");
     print("");
     print("Support file types: ${knowFileTypes.join(', ')}");
     return;
