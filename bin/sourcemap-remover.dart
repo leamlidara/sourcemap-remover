@@ -4,7 +4,7 @@ import "dart:io";
 void main(List<String> arguments) {
   List<String> knowFileTypes = [".js", ".ts", ".css", ".sass"];
   if (arguments.contains("-h") || arguments.contains("--help")) {
-    print("SourceMap remover v1.0.2 by LEAM LIDARA");
+    print("SourceMap remover v1.0.3 by LEAM LIDARA");
     print("https://github.com/leamlidara");
     print("---------------------------------------------");
     print("");
@@ -78,12 +78,9 @@ void _fixSourceMapNotFound(String path) {
 }
 
 void _fixServiceWorker(String path, List<String> knowFileTypes) {
-  print("Due to SDK failure, this is not working!");
-  return;
-
   var f = File(path);
 
-  final regex = RegExp(r"\[(.)*?\]", dotAll: true, multiLine: true);
+  RegExp regex = RegExp(r"\{(.)*?\}", dotAll: true, multiLine: true);
   String content = f.readAsStringSync();
 
   var matches = regex.allMatches(content);
@@ -94,8 +91,8 @@ void _fixServiceWorker(String path, List<String> knowFileTypes) {
 
   for (final match in matches) {
     String str = match.group(0) ?? "{}";
-    bool isJsonNeedFix = false;
-    List<dynamic> js;
+
+    Map<String, dynamic> js;
     try {
       str = str.replaceAll(RegExp(r"^([\s\t])*", multiLine: true, unicode: true), "");
       str = str.replaceAllMapped(
@@ -103,57 +100,50 @@ void _fixServiceWorker(String path, List<String> knowFileTypes) {
             r"([\{\,])([\s\t]+)?([a-zA-Z0-9]+)?([\s\t]+)?:",
             multiLine: true,
           ), (m) {
-        isJsonNeedFix = true;
         return '${m.group(1)}"${m.group(3)}":';
       });
       str = str.replaceAll(RegExp(r"\},(\n|\r\n)?\]"), "}]");
       js = json.decode(str);
-      print(str);
       str = "";
     } catch (e) {
       continue;
     }
 
-    List<dynamic> toDeleteList = List.empty(growable: true);
-    for (var jse in js) {
-      if (jse is String) {
-        jse = jse.trim();
-        for (var k = 0; k < cntFileType; k++) {
-          if (jse != "" && jse.endsWith("${knowFileTypes[k]}.map") == false) continue;
+    for (var k = 0; k < cntFileType; k++) {
+      if (js["url"]?.endsWith("${knowFileTypes[k]}.map") == false) continue;
 
-          toDeleteList.add(jse);
-        }
-      } else if (jse is Map && jse.containsKey('url')) {
-        for (var k = 0; k < cntFileType; k++) {
-          if (jse["url"]?.endsWith("${knowFileTypes[k]}.map") == false) continue;
-
-          toDeleteList.add(jse);
-        }
-      }
+      hasRemove = true;
+      content = content.replaceAll(match.group(0) ?? "", "");
     }
-
-    if (toDeleteList.isEmpty) continue;
-    for (var jse in toDeleteList) {
-      js.remove(jse);
-    }
-    toDeleteList.clear();
-
-    hasRemove = true;
-    str = json.encode(js);
-    if (isJsonNeedFix) {
-      str = str.replaceAllMapped(
-          RegExp(
-            r'([\{\,])"([a-zA-Z0-9]+)?":',
-            multiLine: true,
-          ), (m) {
-        return '${m.group(1)}${m.group(2)}:';
-      });
-    }
-    content = content.replaceAll(match.group(0) ?? "", str);
   }
 
   if (hasRemove) {
     f.writeAsStringSync(content.trim());
-    print("Service Worker Fixed: $path");
+    print("Service Worker Map DataType Fixed");
+  }
+
+  hasRemove = false;
+  try {
+    regex = RegExp(r"\[(.)*?\]", dotAll: true, multiLine: true);
+    matches = regex.allMatches(content);
+    for (final match in matches) {
+      String str = match.group(0) ?? "";
+      if (str == "") continue;
+
+      for (var k = 0; k < cntFileType; k++) {
+        if (str.endsWith("${knowFileTypes[k]}.map") == false) continue;
+
+        hasRemove = true;
+        content = content.replaceAll(str, "");
+      }
+    }
+  } catch (e) {
+    print("Unable to fix Service Worker List DataType due to StackOverflow on Dart SDK!");
+    return;
+  }
+
+  if (hasRemove) {
+    f.writeAsStringSync(content.trim());
+    print("Service Worker List DataType Fixed");
   }
 }
